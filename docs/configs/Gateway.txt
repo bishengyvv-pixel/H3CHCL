@@ -1,0 +1,165 @@
+# 设备配置备份
+# 备份时间: 2026-05-09T20:40:53.804665
+# 设备 IP:  172.16.255.1
+# 主机名:   Gateway
+# 角色:     router
+============================================================
+
+#
+ version 7.1.064, Release 0427P22
+#
+ sysname Gateway
+#
+ospf 1 router-id 172.16.255.1
+ default-route-advertise always
+ import-route ospf 2
+ area 0.0.0.0
+  network 172.16.100.0 0.0.0.3
+  network 172.16.100.4 0.0.0.3
+  network 172.16.255.1 0.0.0.0
+#
+ospf 2 router-id 202.101.1.1
+ import-route direct
+ import-route ospf 1
+ area 0.0.0.0
+  network 202.101.1.0 0.0.0.255
+#
+ system-working-mode standard
+ xbar load-single
+ password-recovery enable
+ lpu-type f-series
+#
+vlan 1
+#
+interface Serial1/0
+#
+interface Serial2/0
+#
+interface Serial3/0
+#
+interface Serial4/0
+#
+interface NULL0
+#
+interface LoopBack0
+ ip address 172.16.255.1 255.255.255.255
+#
+interface GigabitEthernet0/0
+ port link-mode route
+ combo enable copper
+ ip address 172.16.100.1 255.255.255.252
+#
+interface GigabitEthernet0/1
+ port link-mode route
+ combo enable copper
+ ip address 172.16.100.5 255.255.255.252
+#
+interface GigabitEthernet0/2
+ port link-mode route
+ combo enable copper
+ ip address 202.101.1.1 255.255.255.0
+ nat outbound
+#
+interface GigabitEthernet5/0
+ port link-mode route
+ combo enable copper
+#
+interface GigabitEthernet5/1
+ port link-mode route
+ combo enable copper
+#
+interface GigabitEthernet6/0
+ port link-mode route
+ combo enable copper
+#
+interface GigabitEthernet6/1
+ port link-mode route
+ combo enable copper
+#
+ scheduler logfile size 16
+#
+line class aux
+ user-role network-operator
+#
+line class console
+ user-role network-admin
+#
+line class tty
+ user-role network-operator
+#
+line class vty
+ user-role network-operator
+#
+line aux 0
+ user-role network-operator
+#
+line con 0
+ user-role network-admin
+#
+line vty 0 63
+ authentication-mode scheme
+ user-role network-operator
+ protocol inbound ssh
+#
+ ip route-static 0.0.0.0 0 202.101.1.1
+#
+ ssh server enable
+#
+domain system
+#
+ domain default enable system
+#
+role name level-0
+ description Predefined level-0 role
+#
+role name level-1
+ description Predefined level-1 role
+#
+role name level-2
+ description Predefined level-2 role
+#
+role name level-3
+ description Predefined level-3 role
+#
+role name level-4
+ description Predefined level-4 role
+#
+role name level-5
+ description Predefined level-5 role
+#
+role name level-6
+ description Predefined level-6 role
+#
+role name level-7
+ description Predefined level-7 role
+#
+role name level-8
+ description Predefined level-8 role
+#
+role name level-9
+ description Predefined level-9 role
+#
+role name level-10
+ description Predefined level-10 role
+#
+role name level-11
+ description Predefined level-11 role
+#
+role name level-12
+ description Predefined level-12 role
+#
+role name level-13
+ description Predefined level-13 role
+#
+role name level-14
+ description Predefined level-14 role
+#
+user-group system
+#
+local-user admin class manage
+ password hash $h$6$ytQM7uiF7cgArzU3$eilhqW0KfOkqR/sGXoh5uwWtLV/n+sB9cK56SVKxctB6SYHZwW6YCBqTAA64P0EtySZCRoEPwOpBPy7sgNROfA==
+ service-type ssh
+ authorization-attribute user-role network-admin
+ authorization-attribute user-role network-operator
+#
+return
