@@ -66,7 +66,9 @@ class AssessmentPipeline:
 
         failed = [d for d in devices if d.collected_outputs == {}]
         if failed:
-            logger.warning("%d device(s) unreachable; skipped from evaluation.", len(failed))
+            logger.warning("%d device(s) unreachable, reason:", len(failed))
+            for d in failed:
+                logger.warning("  %s — %s", d.ip, d.error_message or "unknown error")
         online = [d for d in devices if d.collected_outputs != {}]
 
         # 2. 角色识别
