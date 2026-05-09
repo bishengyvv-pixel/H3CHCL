@@ -11,5 +11,5 @@ class RateLimiter:
         self._batch_delay = batch_delay
 
     def tick(self) -> None:
-        logger.debug("Rate-limiter: sleeping %.1fs", self._batch_delay)
+        logger.debug("限速器: 休眠 %.1f 秒", self._batch_delay)
         time.sleep(self._batch_delay)

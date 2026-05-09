@@ -22,7 +22,7 @@ def retry_on_failure(max_attempts: int = 3, delay: float = 1.0) -> Callable:
                 except Exception as exc:
                     last_error = exc
                 if attempt < max_attempts:
-                    logger.info("Retry %d/%d after %.1fs…", attempt, max_attempts, delay)
+                    logger.info("第 %d/%d 次重试，等待 %.1f 秒…", attempt, max_attempts, delay)
                     time.sleep(delay)
             raise last_error or RuntimeError("All retry attempts exhausted")
 

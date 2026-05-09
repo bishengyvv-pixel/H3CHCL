@@ -34,7 +34,7 @@ class RiskCalculator:
         else:
             risk_level = "low"
 
-        logger.info("Device %s → score=%d risk=%s", device.ip, score, risk_level)
+        logger.info("设备 %s → 得分=%d 风险等级=%s", device.ip, score, risk_level)
 
         return AssessmentResult(
             device_ip=device.ip,

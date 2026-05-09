@@ -38,6 +38,7 @@ class ConfigLoader:
                     check_cmd=item["check_cmd"],
                     regex=item["regex"],
                     weight=item["weight"],
+                    match_type=item.get("match_type", "find"),
                     fix_template=item.get("fix_template", ""),
                     applicable_roles=item.get("applicable_roles", []),
                 ))

@@ -37,7 +37,7 @@ class ExcelReporter:
 
         filepath = self._output_dir / filename
         wb.save(filepath)
-        logger.info("Excel report saved → %s", filepath)
+        logger.info("Excel 报告已保存 → %s", filepath)
         return filepath
 
     # ------------------------------------------------------------------

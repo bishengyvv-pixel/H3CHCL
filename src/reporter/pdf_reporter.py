@@ -15,6 +15,6 @@ class PdfReporter:
     def generate(self, results: list[AssessmentResult], filename: str = "assessment_report.pdf") -> Path:
         self._output_dir.mkdir(parents=True, exist_ok=True)
         filepath = self._output_dir / filename
-        logger.warning("PDF reporter is a stub — implement with reportlab / WeasyPrint as needed.")
+        logger.warning("PDF 报告器为桩代码，待用 reportlab / WeasyPrint 实现。")
         # TODO: 实现完整 PDF 输出
         return filepath

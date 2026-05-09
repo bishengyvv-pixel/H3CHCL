@@ -45,11 +45,11 @@ class AssessmentPipeline:
         settings = self._settings
 
         if not devices:
-            logger.warning("No devices configured. Exiting.")
+            logger.warning("无设备配置，退出。")
             return
 
         # 1. 并发连接采集
-        logger.info("Phase 1: Connecting to %d device(s)…", len(devices))
+        logger.info("阶段 1: 正在连接 %d 台设备…", len(devices))
         rate_limiter = RateLimiter(settings.batch_delay)
         scheduler = TaskScheduler(settings.max_workers, rate_limiter)
 
@@ -66,19 +66,19 @@ class AssessmentPipeline:
 
         failed = [d for d in devices if d.collected_outputs == {}]
         if failed:
-            logger.warning("%d device(s) unreachable, reason:", len(failed))
+            logger.warning("%d 台设备不可达，原因:", len(failed))
             for d in failed:
-                logger.warning("  %s — %s", d.ip, d.error_message or "unknown error")
+                logger.warning("  %s — %s", d.ip, d.error_message or "未知错误")
         online = [d for d in devices if d.collected_outputs != {}]
 
         # 2. 角色识别
-        logger.info("Phase 2: Identifying roles for %d device(s)…", len(online))
+        logger.info("阶段 2: 正在识别 %d 台设备角色…", len(online))
         identifier = RoleIdentifier()
         for dev in online:
             identifier.identify(dev)
 
         # 3. 安全评估
-        logger.info("Phase 3: Evaluating %d device(s)…", len(online))
+        logger.info("阶段 3: 正在评估 %d 台设备…", len(online))
         rule_engine = RuleEngine()
         risk_calc = RiskCalculator(settings.high_risk_threshold, settings.medium_risk_threshold)
         results = []
@@ -88,11 +88,11 @@ class AssessmentPipeline:
             results.append(result)
 
         # 4. 报告输出
-        logger.info("Phase 4: Generating reports…")
+        logger.info("阶段 4: 正在生成报告…")
         ExcelReporter(settings.output_dir).generate(results)
         JsonReporter(settings.output_dir).generate(results)
 
-        logger.info("Assessment complete. %d device(s) evaluated.", len(results))
+        logger.info("评估完成，共评估 %d 台设备。", len(results))
 
 
 def main():

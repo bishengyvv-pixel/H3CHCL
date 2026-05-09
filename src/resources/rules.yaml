@@ -9,6 +9,7 @@ roles:
         desc: "弱口令/本地用户检测"
         check_cmd: "display local-user"
         regex: '(?i)password\s+(simple|cipher)\s+admin|password\s+(simple|cipher)\s+123456|password\s+(simple|cipher)\s+password'
+        match_type: "not_find"
         weight: 20
         fix_template: "system-view \n local-user <name> \n password cipher <complex-password>"
 

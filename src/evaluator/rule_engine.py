@@ -17,7 +17,14 @@ class RuleEngine:
         applicable = [r for r in rules if self._rule_applies(r, device.role.value)]
         for rule in applicable:
             output = device.collected_outputs.get(rule.check_cmd, "")
-            if not self._regex_match(rule.regex, output):
+            matched = self._regex_match(rule.regex, output)
+
+            # find:   正则匹配 → 通过；未匹配 → 扣分
+            # not_find: 正则匹配 → 命中风险项 → 扣分；未匹配 → 通过
+            is_failure = (rule.match_type == "find" and not matched) or \
+                         (rule.match_type == "not_find" and matched)
+
+            if is_failure:
                 failed.append(FailedItem(
                     rule_id=rule.id,
                     desc=rule.desc,
@@ -37,5 +44,5 @@ class RuleEngine:
         try:
             return re.search(pattern, text, re.IGNORECASE) is not None
         except re.error as exc:
-            logger.warning("Invalid regex '%s': %s", pattern, exc)
+            logger.warning("无效的正则表达式 '%s': %s", pattern, exc)
             return False

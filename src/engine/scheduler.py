@@ -25,7 +25,7 @@ class TaskScheduler:
                 try:
                     results.append(future.result())
                 except Exception as exc:
-                    logger.error("Task failed: %s", exc)
+                    logger.error("任务执行失败: %s", exc)
                 finally:
                     if self._rate_limiter:
                         self._rate_limiter.tick()

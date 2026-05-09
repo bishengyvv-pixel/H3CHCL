@@ -42,7 +42,7 @@ class DeviceConnection:
                     source_address=(source_ip, 0),
                 )
                 params["sock"] = sock
-                logger.info("Bound to source IP %s → %s", source_ip, self.device.ip)
+                logger.info("已绑定源 IP %s → %s", source_ip, self.device.ip)
             except OSError as exc:
                 self.device.status = ConnectionStatus.ERROR
                 self.device.error_message = f"Source IP bind failed: {exc}"
@@ -70,7 +70,7 @@ class DeviceConnection:
             try:
                 outputs[cmd] = self._connection.send_command(cmd)
             except Exception as exc:
-                logger.warning("Command '%s' failed on %s: %s", cmd, self.device.ip, exc)
+                logger.warning("命令 '%s' 在 %s 上执行失败: %s", cmd, self.device.ip, exc)
                 outputs[cmd] = ""
         return outputs
 

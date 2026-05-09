@@ -36,7 +36,7 @@ class JsonReporter:
         filepath = self._output_dir / filename
         with open(filepath, "w", encoding="utf-8") as fh:
             json.dump(payload, fh, ensure_ascii=False, indent=2)
-        logger.info("JSON report saved → %s", filepath)
+        logger.info("JSON 报告已保存 → %s", filepath)
         return filepath
 
 
