@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 # 采集所需的 H3C Comware 命令列表
 COLLECT_COMMANDS = [
+    "display version",
     "display current-configuration",
     "display local-user",
     "display stp",

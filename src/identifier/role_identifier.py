@@ -16,22 +16,38 @@ _OSPF_RE = re.compile(r"ospf\s+\d+", re.IGNORECASE)
 _BGP_RE = re.compile(r"bgp\s+\d+", re.IGNORECASE)
 _VRRP_RE = re.compile(r"vrrp\s+vrid", re.IGNORECASE)
 
+# 路由器型号特征：H3C 路由器型号包含 MSR / SR / CR / Router 等关键词
+_ROUTER_MODEL_RE = re.compile(
+    r'\b(MSR\d+|SR\d+|CR\d+|RT\d+|Router\b|Virtual[-\s]?Router|AR\d+)',
+    re.IGNORECASE,
+)
+
 
 class RoleIdentifier:
-    """基于设备 running-config 特征判定角色（接入 / 汇聚 / 核心）。
+    """基于 display version 判定路由/交换，再对交换机按 L3/L2 分层评分。
 
-    分层评分策略（OSPF 普遍存在，不能单靠它判核心）：
-      L3 得分 = has_bgp*4 + has_ospf*2 + has_vrrp*2 + (vlan_if>=5)*3 + (vlan_if>=2)*1
-      L2 得分 = (access_port>=10)*3 + (access_port>=5)*2 + has_edged*2 + has_dhcp*2
-
-      核心层: L3 ≥ 5  (OSPF/BGP + 多VLAN接口 + VRRP)
-      汇聚层: L3 ≥ 2  (有动态路由但L3特征不强)
-      接入层: L2 ≥ 1  (纯二层特征，无动态路由)
-      未知:    其他
+    判定流程：
+      1. display version 中匹配路由器型号 → ROUTER
+      2. 交换机按 L3/L2 评分：
+          核心层: L3 ≥ 5
+          汇聚层: L3 ≥ 2 且 L2 = 0
+          接入层: L3 ≥ 2 且 L2 ≥ 1  或  L2 ≥ 1
     """
 
     def identify(self, device: Device) -> DeviceRole:
-        config_text = self._get_config_text(device)
+        # 第一步：判断设备类型（路由器 vs 交换机）
+        version_text = device.collected_outputs.get("display version", "")
+
+        if version_text and _ROUTER_MODEL_RE.search(version_text):
+            device.role = DeviceRole.ROUTER
+            # 提取型号用于日志
+            match = _ROUTER_MODEL_RE.search(version_text)
+            model = match.group(0) if match else "unknown"
+            logger.info("设备 %s 识别为 router (型号匹配: %s)", device.ip, model)
+            return device.role
+
+        # 第二步：交换机角色分层
+        config_text = device.collected_outputs.get("display current-configuration", "")
         if not config_text:
             return DeviceRole.UNKNOWN
 
@@ -71,7 +87,6 @@ class RoleIdentifier:
         elif l3_score >= 2 and l2_score == 0:
             device.role = DeviceRole.AGGREGATION
         elif l3_score >= 2 and l2_score >= 1:
-            # 同时具备 L3 和 L2 特征（如 edged-port）→ 三层接入交换机
             device.role = DeviceRole.ACCESS
         elif l2_score >= 1:
             device.role = DeviceRole.ACCESS
@@ -80,8 +95,3 @@ class RoleIdentifier:
 
         logger.info("设备 %s 识别为 %s", device.ip, device.role.value)
         return device.role
-
-    @staticmethod
-    def _get_config_text(device: Device) -> str:
-        key = "display current-configuration"
-        return device.collected_outputs.get(key, "")

@@ -4,6 +4,7 @@ from enum import Enum
 
 class DeviceRole(str, Enum):
     UNKNOWN = "unknown"
+    ROUTER = "router"
     ACCESS = "access"
     AGGREGATION = "aggregation"
     CORE = "core"
