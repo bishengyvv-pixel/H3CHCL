@@ -8,21 +8,21 @@ roles:
       - id: "AUTH_01"
         desc: "弱口令/本地用户检测"
         check_cmd: "display local-user"
-        regex: "(?i)password\\s+(simple|cipher)\\s+admin|password\\s+(simple|cipher)\\s+123456|password\\s+(simple|cipher)\\s+password"
+        regex: '(?i)password\s+(simple|cipher)\s+admin|password\s+(simple|cipher)\s+123456|password\s+(simple|cipher)\s+password'
         weight: 20
         fix_template: "system-view \n local-user <name> \n password cipher <complex-password>"
 
       - id: "LOG_01"
         desc: "日志审计未开启"
         check_cmd: "display current-configuration"
-        regex: "info-center enable"
+        regex: 'info-center enable'
         weight: 10
         fix_template: "system-view \n info-center enable"
 
       - id: "NTP_01"
         desc: "NTP时间同步未配置"
         check_cmd: "display current-configuration"
-        regex: "ntp-service\\s+(unicast-server|server)"
+        regex: 'ntp-service\s+(unicast-server|server)'
         weight: 5
         fix_template: "system-view \n ntp-service server <ntp-server-ip>"
 
@@ -32,7 +32,7 @@ roles:
       - id: "STP_01"
         desc: "BPDU保护未全局开启"
         check_cmd: "display current-configuration"
-        regex: "stp bpdu-protection"
+        regex: 'stp bpdu-protection'
         weight: 15
         fix_template: "system-view \n stp bpdu-protection"
         applicable_roles: ["access"]
@@ -40,7 +40,7 @@ roles:
       - id: "STP_02"
         desc: "边缘端口未配置BPDU过滤"
         check_cmd: "display stp"
-        regex: "BPDU[-\s]?[Pp]rotection"
+        regex: 'BPDU[-\s]?[Pp]rotection'
         weight: 10
         fix_template: "system-view \n stp bpdu-protection"
         applicable_roles: ["access"]
@@ -48,7 +48,7 @@ roles:
       - id: "DHCP_01"
         desc: "DHCP Snooping未开启"
         check_cmd: "display dhcp snooping"
-        regex: "DHCP[-\s]?[Ss]nooping[-\s]?[Ee]nable|dhcp-snooping enable"
+        regex: 'DHCP[-\s]?[Ss]nooping[-\s]?[Ee]nable|dhcp-snooping enable'
         weight: 15
         fix_template: "system-view \n dhcp-snooping"
         applicable_roles: ["access"]
@@ -59,7 +59,7 @@ roles:
       - id: "ACL_01"
         desc: "管理平面访问控制未配置"
         check_cmd: "display acl all"
-        regex: "rule\\s+\\d+\\s+permit.*(telnet|ssh|snmp)"
+        regex: 'rule\s+\d+\s+permit.*(telnet|ssh|snmp)'
         weight: 15
         fix_template: "system-view \n acl number 3000 \n rule 10 permit tcp destination 0 0 source-port eq 22"
         applicable_roles: ["aggregation", "core"]
@@ -67,7 +67,7 @@ roles:
       - id: "VRRP_01"
         desc: "VRRP未配置认证"
         check_cmd: "display current-configuration"
-        regex: "vrrp.*authentication-mode"
+        regex: 'vrrp.*authentication-mode'
         weight: 10
         fix_template: "system-view \n interface Vlan-interface <id> \n vrrp vrid <id> authentication-mode md5 <key>"
         applicable_roles: ["aggregation", "core"]
@@ -77,7 +77,7 @@ roles:
       - id: "ROUTE_01"
         desc: "路由协议认证未配置"
         check_cmd: "display current-configuration"
-        regex: "(ospf|bgp).*authentication-mode"
+        regex: '(ospf|bgp).*authentication-mode'
         weight: 15
         fix_template: "system-view \n ospf 1 \n area 0 \n authentication-mode md5 <key>"
         applicable_roles: ["core"]
@@ -85,7 +85,7 @@ roles:
       - id: "ACL_02"
         desc: "SNMP访问控制未配置"
         check_cmd: "display current-configuration"
-        regex: "snmp-agent.*acl"
+        regex: 'snmp-agent.*acl'
         weight: 10
         fix_template: "system-view \n snmp-agent community read <name> acl <num>"
         applicable_roles: ["core"]
