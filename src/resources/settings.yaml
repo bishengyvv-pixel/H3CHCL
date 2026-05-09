@@ -1,0 +1,14 @@
+# ------------------------------------------------------------------
+# 全局运行时设置（全部可覆盖，未配置项使用 config/settings.py 默认值）
+# ------------------------------------------------------------------
+max_workers: 5
+batch_delay: 2.0
+retry_count: 3
+retry_delay: 1.0
+command_timeout: 60
+device_type: "hp_comware"
+
+high_risk_threshold: 60
+medium_risk_threshold: 85
+
+output_dir: "output"
