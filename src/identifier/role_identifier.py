@@ -42,7 +42,7 @@ class RoleIdentifier:
         has_edged = _EDGED_PORT_RE.search(config_text) is not None
         has_dhcp = _DHCP_SNOOPING_RE.search(config_text) is not None
 
-        logger.debug(
+        logger.info(
             "%s: access端口=%d vlan接口=%d ospf=%s bgp=%s vrrp=%s edged=%s dhcp=%s",
             device.ip, access_port_cnt, vlan_if_cnt, has_ospf, has_bgp, has_vrrp, has_edged, has_dhcp,
         )

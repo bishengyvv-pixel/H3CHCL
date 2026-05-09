@@ -3,6 +3,7 @@
 流水线：加载配置 → 并发连接采集 → 角色识别 → 规则评估 → 生成报告
 """
 
+import argparse
 import logging
 import sys
 from pathlib import Path
@@ -49,6 +50,7 @@ class AssessmentPipeline:
             return
 
         # 1. 并发连接采集
+        logger.info("=" * 50)
         logger.info("阶段 1: 正在连接 %d 台设备…", len(devices))
         rate_limiter = RateLimiter(settings.batch_delay)
         scheduler = TaskScheduler(settings.max_workers, rate_limiter)
@@ -65,19 +67,31 @@ class AssessmentPipeline:
         devices = scheduler.run_all([make_task(d) for d in devices])
 
         failed = [d for d in devices if d.collected_outputs == {}]
-        if failed:
-            logger.warning("%d 台设备不可达，原因:", len(failed))
-            for d in failed:
-                logger.warning("  %s — %s", d.ip, d.error_message or "未知错误")
         online = [d for d in devices if d.collected_outputs != {}]
 
+        for d in online:
+            logger.info("  ✓ %s (%s) 连接成功", d.ip, d.hostname)
+        if failed:
+            logger.warning("%d 台设备不可达:", len(failed))
+            for d in failed:
+                logger.warning("  ✗ %s — %s", d.ip, d.error_message or "未知错误")
+
+        if not online:
+            logger.error("无可用设备，评估终止。")
+            return
+
         # 2. 角色识别
+        logger.info("=" * 50)
         logger.info("阶段 2: 正在识别 %d 台设备角色…", len(online))
         identifier = RoleIdentifier()
+        role_count: dict[str, int] = {}
         for dev in online:
-            identifier.identify(dev)
+            role = identifier.identify(dev)
+            role_count[role.value] = role_count.get(role.value, 0) + 1
+        logger.info("角色分布: %s", role_count)
 
         # 3. 安全评估
+        logger.info("=" * 50)
         logger.info("阶段 3: 正在评估 %d 台设备…", len(online))
         rule_engine = RuleEngine()
         risk_calc = RiskCalculator(settings.high_risk_threshold, settings.medium_risk_threshold)
@@ -87,22 +101,65 @@ class AssessmentPipeline:
             result = risk_calc.calculate(dev, failed_items)
             results.append(result)
 
+            # 逐设备打印扣分明细
+            if failed_items:
+                items_desc = ", ".join(f"{f.rule_id}({f.desc}, -{f.weight})" for f in failed_items)
+                logger.info("  %s [%s] 得分=%d 风险=%s → 扣分项: %s",
+                            dev.ip, dev.role.value, result.score, result.risk_level, items_desc)
+            else:
+                logger.info("  %s [%s] 得分=%d 风险=%s → 全部通过 ✓",
+                            dev.ip, dev.role.value, result.score, result.risk_level)
+
         # 4. 报告输出
+        logger.info("=" * 50)
         logger.info("阶段 4: 正在生成报告…")
         ExcelReporter(settings.output_dir).generate(results)
         JsonReporter(settings.output_dir).generate(results)
 
-        logger.info("评估完成，共评估 %d 台设备。", len(results))
+        # 5. 摘要
+        self._print_summary(results)
+
+    @staticmethod
+    def _print_summary(results) -> None:
+        if not results:
+            return
+        high = sum(1 for r in results if r.risk_level == "high")
+        medium = sum(1 for r in results if r.risk_level == "medium")
+        low = sum(1 for r in results if r.risk_level == "low")
+        avg = sum(r.score for r in results) / len(results)
+
+        logger.info("=" * 50)
+        logger.info("评估摘要")
+        logger.info("  设备总数: %d", len(results))
+        logger.info("  平均得分: %.1f / 100", avg)
+        logger.info("  高风险: %d 台  |  中风险: %d 台  |  低风险: %d 台", high, medium, low)
+        if high:
+            high_ips = [r.device_ip for r in results if r.risk_level == "high"]
+            logger.info("  高风险设备: %s", ", ".join(high_ips))
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="H3C 园区网自动化安全评估系统")
+    parser.add_argument("-c", "--config", default="", metavar="DIR",
+                        help="自定义配置目录路径")
+    parser.add_argument("--debug", action="store_true",
+                        help="启用 DEBUG 级别日志")
+    return parser.parse_args()
 
 
 def main():
+    args = parse_args()
+    log_level = logging.DEBUG if args.debug else logging.INFO
     logging.basicConfig(
-        level=logging.INFO,
+        level=log_level,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-    resource_dir = sys.argv[1] if len(sys.argv) > 1 else ""
-    AssessmentPipeline(resource_dir).run()
+    # 抑制 paramiko 的传输层日志（正常情况不需要看到 SSH 握手细节）
+    if not args.debug:
+        logging.getLogger("paramiko.transport").setLevel(logging.WARNING)
+
+    AssessmentPipeline(args.config).run()
 
 
 if __name__ == "__main__":
