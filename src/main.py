@@ -17,6 +17,7 @@ from src.evaluator.rule_engine import RuleEngine
 from src.evaluator.risk_calculator import RiskCalculator
 from src.reporter.excel_reporter import ExcelReporter
 from src.reporter.json_reporter import JsonReporter
+from src.reporter.config_backup import ConfigBackup
 
 logger = logging.getLogger(__name__)
 
@@ -111,11 +112,12 @@ class AssessmentPipeline:
                 logger.info("  %s [%s] 得分=%d 风险=%s → 全部通过 ✓",
                             dev.ip, dev.role.value, result.score, result.risk_level)
 
-        # 4. 报告输出
+        # 4. 报告输出 + 配置备份
         logger.info("=" * 50)
         logger.info("阶段 4: 正在生成报告…")
         ExcelReporter(settings.output_dir).generate(results)
         JsonReporter(settings.output_dir).generate(results)
+        ConfigBackup(settings.output_dir).save(online)
 
         # 5. 摘要
         self._print_summary(results)
