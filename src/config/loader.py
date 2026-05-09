@@ -19,8 +19,12 @@ class ConfigLoader:
     # ---------- devices ----------
     def load_devices(self, filename: str = "devices.yaml") -> list[Device]:
         data = self._read_yaml(filename)
-        return [Device(ip=d["ip"], username=d["username"], password=d["password"])
-                for d in data.get("devices", [])]
+        return [Device(
+                    ip=d["ip"],
+                    username=d["username"],
+                    password=d["password"],
+                    source_ip=d.get("source_ip", ""),
+                ) for d in data.get("devices", [])]
 
     # ---------- rules ----------
     def load_rules(self, filename: str = "rules.yaml") -> list[Rule]:
@@ -51,6 +55,7 @@ class ConfigLoader:
             retry_delay=data.get("retry_delay", 1.0),
             command_timeout=data.get("command_timeout", 60),
             device_type=data.get("device_type", "hp_comware"),
+            source_ip=data.get("source_ip", ""),
             high_risk_threshold=data.get("high_risk_threshold", 60),
             medium_risk_threshold=data.get("medium_risk_threshold", 85),
             output_dir=data.get("output_dir", "output"),

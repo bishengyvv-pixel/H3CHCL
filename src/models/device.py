@@ -20,6 +20,7 @@ class Device:
     ip: str
     username: str
     password: str
+    source_ip: str = ""
     hostname: str = ""
     role: DeviceRole = DeviceRole.UNKNOWN
     status: ConnectionStatus = ConnectionStatus.PENDING

@@ -7,6 +7,7 @@ retry_count: 3
 retry_delay: 1.0
 command_timeout: 60
 device_type: "hp_comware"
+source_ip: ""          # 多网卡环境指定出口 IP，留空则不绑定
 
 high_risk_threshold: 60
 medium_risk_threshold: 85

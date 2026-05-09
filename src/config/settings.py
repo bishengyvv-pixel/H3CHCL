@@ -11,6 +11,7 @@ class Settings:
     retry_delay: float = 1.0
     command_timeout: int = 60
     device_type: str = "hp_comware"
+    source_ip: str = ""
 
     # 风险等级阈值
     high_risk_threshold: int = 60

@@ -55,7 +55,7 @@ class AssessmentPipeline:
 
         def make_task(dev):
             def _task():
-                conn = DeviceConnection(dev, settings.device_type, settings.command_timeout)
+                conn = DeviceConnection(dev, settings.device_type, settings.command_timeout, settings.source_ip)
                 if conn.connect():
                     dev.collected_outputs = conn.execute_commands(COLLECT_COMMANDS)
                     conn.disconnect()

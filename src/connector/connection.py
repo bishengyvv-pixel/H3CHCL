@@ -1,5 +1,6 @@
 import logging
-from dataclasses import dataclass
+import socket
+from dataclasses import dataclass, field
 from typing import Any
 
 from netmiko import ConnectHandler
@@ -17,18 +18,36 @@ class DeviceConnection:
     device: Device
     device_type: str = "hp_comware"
     timeout: int = 60
+    global_source_ip: str = ""
 
-    def __post_init__(self) -> None:
-        self._connection: Any = None
+    _connection: Any = field(default=None, init=False)
 
     def connect(self) -> bool:
-        params = {
+        # 设备级 source_ip 优先于全局设置
+        source_ip = self.device.source_ip or self.global_source_ip
+
+        params: dict[str, Any] = {
             "device_type": self.device_type,
             "host": self.device.ip,
             "username": self.device.username,
             "password": self.device.password,
             "timeout": self.timeout,
         }
+
+        if source_ip:
+            try:
+                sock = socket.create_connection(
+                    (self.device.ip, 22),
+                    timeout=self.timeout,
+                    source_address=(source_ip, 0),
+                )
+                params["sock"] = sock
+                logger.info("Bound to source IP %s → %s", source_ip, self.device.ip)
+            except OSError as exc:
+                self.device.status = ConnectionStatus.ERROR
+                self.device.error_message = f"Source IP bind failed: {exc}"
+                return False
+
         try:
             self._connection = ConnectHandler(**params)  # type: ignore[arg-type]
             self.device.hostname = self._connection.find_prompt().strip("<>")

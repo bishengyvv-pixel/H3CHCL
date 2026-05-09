@@ -5,6 +5,7 @@ devices:
   - ip: "172.16.255.1"
     username: "admin"
     password: "qwert12345"
+    # source_ip: "192.168.1.100"   # 可选：指定本机出口 IP
   - ip: "172.16.255.11"
     username: "admin"
     password: "qwert12345"
