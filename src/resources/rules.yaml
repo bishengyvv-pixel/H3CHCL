@@ -1,20 +1,26 @@
 # ------------------------------------------------------------------
-# 安全检测规则定义 —— 按设备角色分层，采用 Regex 匹配
+# 安全检测规则定义 — 按设备角色分层，采用 Regex 匹配
+#
+# match_type 说明：
+#   "find"     — 正则命中 = 合规（feature 存在），未命中则扣分
+#   "not_find" — 正则命中 = 违规（风险项存在），命中则扣分
 # ------------------------------------------------------------------
 roles:
-  # ---------- 通用规则 (applicable_roles 为空 = 全部角色生效) ----------
+  # ==================================================================
+  # 通用规则 — 所有角色均适用
+  # ==================================================================
   common:
     items:
       - id: "AUTH_01"
-        desc: "弱口令/本地用户检测"
-        check_cmd: "display local-user"
-        regex: '(?i)password\s+(simple|cipher)\s+admin|password\s+(simple|cipher)\s+123456|password\s+(simple|cipher)\s+password'
+        desc: "存在弱口令本地用户"
+        check_cmd: "display current-configuration"
+        regex: '(?i)password\s+(simple|cipher)\s+(admin|123456|password|qwert12345|abc123|test)'
         match_type: "not_find"
         weight: 20
-        fix_template: "system-view \n local-user <name> \n password cipher <complex-password>"
+        fix_template: "system-view \n local-user <name> \n password cipher <强密码>"
 
       - id: "LOG_01"
-        desc: "日志审计未开启"
+        desc: "日志审计(info-center)未开启"
         check_cmd: "display current-configuration"
         regex: 'info-center enable'
         weight: 10
@@ -23,11 +29,64 @@ roles:
       - id: "NTP_01"
         desc: "NTP时间同步未配置"
         check_cmd: "display current-configuration"
-        regex: 'ntp-service\s+(unicast-server|server)'
+        regex: 'ntp-service\s+(unicast-server|server|peer)'
         weight: 5
         fix_template: "system-view \n ntp-service server <ntp-server-ip>"
 
-  # ---------- 接入层规则 ----------
+      - id: "SSH_01"
+        desc: "SSH服务未启用或Telnet未禁用"
+        check_cmd: "display current-configuration"
+        regex: 'ssh server enable'
+        weight: 10
+        fix_template: "system-view \n ssh server enable \n undo telnet server enable"
+
+      - id: "PWCTRL_01"
+        desc: "全局密码强度控制未开启"
+        check_cmd: "display current-configuration"
+        regex: 'password-control enable'
+        weight: 5
+        fix_template: "system-view \n password-control enable"
+
+      - id: "IDLE_01"
+        desc: "Console/VTY线路空闲超时未设置"
+        check_cmd: "display current-configuration"
+        regex: 'idle-timeout\s+\d+'
+        weight: 5
+        fix_template: "system-view \n user-interface vty 0 4 \n idle-timeout 5"
+
+  # ==================================================================
+  # 路由器规则
+  # ==================================================================
+  router:
+    items:
+      - id: "RTR_CON_01"
+        desc: "Console口未配置认证"
+        check_cmd: "display current-configuration"
+        regex: 'user-interface\s+(aux|console)[\s\S]*?authentication-mode\s+(password|scheme)'
+        weight: 10
+        fix_template: "system-view \n user-interface console 0 \n authentication-mode scheme"
+        applicable_roles: ["router"]
+
+      - id: "RTR_VTY_01"
+        desc: "VTY远程登录未绑定ACL"
+        check_cmd: "display current-configuration"
+        regex: 'user-interface\s+vty[\s\S]*?acl\s+\d+\s+inbound'
+        weight: 10
+        fix_template: "system-view \n user-interface vty 0 4 \n acl 2000 inbound"
+        applicable_roles: ["router"]
+
+      - id: "RTR_HTTP_01"
+        desc: "HTTP服务未关闭"
+        check_cmd: "display current-configuration"
+        regex: 'ip http enable'
+        match_type: "not_find"
+        weight: 5
+        fix_template: "system-view \n undo ip http enable"
+        applicable_roles: ["router"]
+
+  # ==================================================================
+  # 接入层规则
+  # ==================================================================
   access:
     items:
       - id: "STP_01"
@@ -38,23 +97,41 @@ roles:
         fix_template: "system-view \n stp bpdu-protection"
         applicable_roles: ["access"]
 
-      - id: "STP_02"
-        desc: "边缘端口未配置BPDU过滤"
-        check_cmd: "display stp"
-        regex: 'BPDU[-\s]?[Pp]rotection'
-        weight: 10
-        fix_template: "system-view \n stp bpdu-protection"
-        applicable_roles: ["access"]
-
       - id: "DHCP_01"
         desc: "DHCP Snooping未开启"
         check_cmd: "display dhcp snooping"
-        regex: 'DHCP[-\s]?[Ss]nooping[-\s]?[Ee]nable|dhcp-snooping enable'
+        regex: '(?i)DHCP\s+Snooping\s+is\s+enabled|dhcp-snooping enable'
         weight: 15
         fix_template: "system-view \n dhcp-snooping"
         applicable_roles: ["access"]
 
-  # ---------- 汇聚/核心层规则 ----------
+      - id: "LOOP_01"
+        desc: "环路检测未开启"
+        check_cmd: "display current-configuration"
+        regex: 'loopback-detection enable'
+        weight: 10
+        fix_template: "system-view \n loopback-detection enable"
+        applicable_roles: ["access"]
+
+      - id: "STORM_01"
+        desc: "风暴控制未配置"
+        check_cmd: "display current-configuration"
+        regex: 'storm-constrain'
+        weight: 10
+        fix_template: "system-view \n interface <name> \n storm-constrain broadcast 1000"
+        applicable_roles: ["access"]
+
+      - id: "PORT_SEC_01"
+        desc: "端口安全未开启"
+        check_cmd: "display current-configuration"
+        regex: 'port-security enable'
+        weight: 10
+        fix_template: "system-view \n port-security enable"
+        applicable_roles: ["access"]
+
+  # ==================================================================
+  # 汇聚层规则
+  # ==================================================================
   aggregation:
     items:
       - id: "ACL_01"
@@ -66,27 +143,46 @@ roles:
         applicable_roles: ["aggregation", "core"]
 
       - id: "VRRP_01"
-        desc: "VRRP未配置认证"
+        desc: "VRRP未配置MD5认证"
         check_cmd: "display current-configuration"
-        regex: 'vrrp.*authentication-mode'
+        regex: 'vrrp.*authentication-mode\s+md5'
         weight: 10
         fix_template: "system-view \n interface Vlan-interface <id> \n vrrp vrid <id> authentication-mode md5 <key>"
         applicable_roles: ["aggregation", "core"]
 
+      - id: "VTY_ACL_01"
+        desc: "VTY远程登录未绑定ACL"
+        check_cmd: "display current-configuration"
+        regex: 'user-interface\s+vty[\s\S]*?acl\s+\d+\s+inbound'
+        weight: 10
+        fix_template: "system-view \n user-interface vty 0 4 \n acl 2000 inbound"
+        applicable_roles: ["aggregation", "core"]
+
+  # ==================================================================
+  # 核心层规则
+  # ==================================================================
   core:
     items:
       - id: "ROUTE_01"
-        desc: "路由协议认证未配置"
+        desc: "OSPF/BGP路由协议未配置MD5认证"
         check_cmd: "display current-configuration"
-        regex: '(ospf|bgp).*authentication-mode'
+        regex: '(ospf|bgp).*authentication-mode\s+md5'
         weight: 15
         fix_template: "system-view \n ospf 1 \n area 0 \n authentication-mode md5 <key>"
         applicable_roles: ["core"]
 
       - id: "ACL_02"
-        desc: "SNMP访问控制未配置"
+        desc: "SNMP未绑定ACL"
         check_cmd: "display current-configuration"
-        regex: 'snmp-agent.*acl'
+        regex: 'snmp-agent.*acl\s+\d+'
         weight: 10
         fix_template: "system-view \n snmp-agent community read <name> acl <num>"
+        applicable_roles: ["core"]
+
+      - id: "CPP_01"
+        desc: "控制平面未配置协议限速"
+        check_cmd: "display current-configuration"
+        regex: 'control-plane'
+        weight: 10
+        fix_template: "system-view \n control-plane \n ip icmp rate-limit 500"
         applicable_roles: ["core"]
