@@ -68,8 +68,11 @@ class RoleIdentifier:
 
         if l3_score >= 5:
             device.role = DeviceRole.CORE
-        elif l3_score >= 2:
+        elif l3_score >= 2 and l2_score == 0:
             device.role = DeviceRole.AGGREGATION
+        elif l3_score >= 2 and l2_score >= 1:
+            # 同时具备 L3 和 L2 特征（如 edged-port）→ 三层接入交换机
+            device.role = DeviceRole.ACCESS
         elif l2_score >= 1:
             device.role = DeviceRole.ACCESS
         else:
